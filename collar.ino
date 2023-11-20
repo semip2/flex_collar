@@ -24,11 +24,13 @@
 #define DEVICE_MANUFACTURER "Foobar"
 #define DEVICE_NAME "FLEX"
 
-#define RESET_BUTTON 16 
+#define BT_BUTTON 23 
 #define GREEN_LED 25
 #define BLUE_LED 26
 #define RED_LED 27 
 #define BATTERY 34 
+#define I2C_SDA 18
+#define I2C_SCL 19
 
 // variables 
 SemaphoreHandle_t reset_semaphore; 
@@ -155,7 +157,7 @@ void advertiseBluetooth() {
   Serial.println("Trying to connect to the app..."); 
 }
 
-void IRAM_ATTR reset_button_isr() { 
+void IRAM_ATTR bt_button_isr() { 
   button_time = millis(); 
   if(button_time - last_button_time > 250) { 
     last_button_time = button_time; 
@@ -212,13 +214,14 @@ void TaskBattery(void *pvParameters) {
     xSemaphoreTake(battery_semaphore, portMAX_DELAY); 
     fBattery = float(100*(((2*analogRead(BATTERY))-3.3)/0.4)); 
     if(fBattery <= 20) { 
-      Serial.println("low battery"); 
+      Serial.println("low battery = ");
+      Serial.print(fBattery);  
       digitalWrite(BLUE_LED, LOW); 
       digitalWrite(GREEN_LED, LOW); 
       digitalWrite(RED_LED, HIGH); 
     }
     if(deviceConnected) { 
-      Serial.print("send battery = "); 
+      Serial.print("battery = "); 
       Serial.println(fBattery); 
       characteristicBatteryMessage->setValue(fBattery);  
       characteristicBatteryMessage->notify(); 
@@ -229,9 +232,10 @@ void TaskBattery(void *pvParameters) {
 
 void setup() { 
   Serial.begin(115200); 
+  Wire.begin(I2C_SDA, I2C_SCL); 
 
   analogReadResolution(12); 
-  pinMode(RESET_BUTTON, INPUT_PULLUP); 
+  pinMode(BT_BUTTON, INPUT_PULLUP); 
   pinMode(RED_LED, OUTPUT); 
   pinMode(GREEN_LED, OUTPUT); 
   pinMode(BLUE_LED, OUTPUT); 
@@ -246,7 +250,7 @@ void setup() {
   // create tasks  
   reset_semaphore = xSemaphoreCreateBinary(); 
   battery_semaphore = xSemaphoreCreateMutex(); 
-  attachInterrupt(RESET_BUTTON, reset_button_isr, FALLING); 
+  attachInterrupt(BT_BUTTON, bt_button_isr, FALLING); 
   xTaskCreate(TaskReset, "TaskReset", 4096, NULL, 3, NULL); 
   xTaskCreate(TaskBattery, "TaskBattery", 2048, NULL, 1, NULL); 
   xTaskCreate(TaskSensor, "TaskSensor", 2048, NULL, 2, NULL); 
