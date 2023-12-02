@@ -12,9 +12,10 @@
 #define BATTERY_SAMPLERATE_PERIOD_MS 60000 
 #define BNO055_SAMPLERATE_PERIOD_MS 40 
 
-#define SERVICE_UUID "ab0828b1-198e-4351-b779-901fa0e0371e" // left  
-#define SENSOR_MESSAGE_UUID "4ac8a682-9736-4e5d-932b-e9b31405049c"   
-#define BATTERY_MESSAGE_UUID "1a70ee55-f504-40fe-b249-9609224a9311" 
+// UUID for LEFT collar 
+#define SERVICE_UUID "ab0828b1-198e-4351-b779-901fa0e0371e"  
+#define SENSOR_MESSAGE_UUID "4ac8a682-9736-4e5d-932b-e9b314050490"   
+#define BATTERY_MESSAGE_UUID "1a70ee55-f504-40fe-b249-9609224a9310" 
 
 #define DEVINFO_UUID (uint16_t)0x180a
 #define DEVINFO_MANUFACTURER_UUID (uint16_t)0x2a29
@@ -24,13 +25,14 @@
 #define DEVICE_MANUFACTURER "Foobar"
 #define DEVICE_NAME "FLEX"
 
-#define BT_BUTTON 23 
-#define GREEN_LED 25
-#define BLUE_LED 26
-#define RED_LED 27 
-#define BATTERY 34 
 #define I2C_SDA 18
-#define I2C_SCL 19
+#define I2C_SCL 19 
+#define BT_BUTTON 23 
+#define RED_LED 25
+#define BLUE_LED 26
+#define GREEN_LED 27
+#define BATTERY 34 
+
 
 // variables 
 SemaphoreHandle_t reset_semaphore; 
@@ -188,8 +190,8 @@ void TaskSensor(void *pvParameters) {
       imu::Vector<3> linearaccel = bno.getVector(Adafruit_BNO055::VECTOR_LINEARACCEL); 
       imu::Vector<3> earthaccel; 
   
-      earthaccel[0] = (1-2*(quat.y()*quat.y() + quat.z()*quat.z()))*linearaccel[0] +   (2*(quat.x()*quat.y() + quat.w()*quat.z()))*linearaccel[1] +   (2*(quat.x()*quat.z() - quat.w()*quat.y()))*linearaccel[2]; 
-      earthaccel[1] =   (2*(quat.x()*quat.y() - quat.w()*quat.z()))*linearaccel[0] + (1-2*(quat.x()*quat.x() + quat.z()*quat.z()))*linearaccel[1] +   (2*(quat.y()*quat.z() + quat.w()*quat.x()))*linearaccel[2];
+      //earthaccel[0] = (1-2*(quat.y()*quat.y() + quat.z()*quat.z()))*linearaccel[0] +   (2*(quat.x()*quat.y() + quat.w()*quat.z()))*linearaccel[1] +   (2*(quat.x()*quat.z() - quat.w()*quat.y()))*linearaccel[2]; 
+      //earthaccel[1] =   (2*(quat.x()*quat.y() - quat.w()*quat.z()))*linearaccel[0] + (1-2*(quat.x()*quat.x() + quat.z()*quat.z()))*linearaccel[1] +   (2*(quat.y()*quat.z() + quat.w()*quat.x()))*linearaccel[2];
       earthaccel[2] =   (2*(quat.x()*quat.z() + quat.w()*quat.y()))*linearaccel[0] +   (2*(quat.y()*quat.z() - quat.w()*quat.x()))*linearaccel[1] + (1-2*(quat.x()*quat.x() + quat.y()*quat.y()))*linearaccel[2];
       fSensor = earthaccel[2];
       if(fSensor > 15.0) { 
@@ -243,7 +245,6 @@ void setup() {
   digitalWrite(GREEN_LED, LOW); 
   digitalWrite(BLUE_LED, HIGH); 
 
-  // init 
   initSensor(); 
   initBluetooth(); 
 
@@ -253,7 +254,7 @@ void setup() {
   attachInterrupt(BT_BUTTON, bt_button_isr, FALLING); 
   xTaskCreate(TaskReset, "TaskReset", 4096, NULL, 3, NULL); 
   xTaskCreate(TaskBattery, "TaskBattery", 2048, NULL, 1, NULL); 
-  xTaskCreate(TaskSensor, "TaskSensor", 2048, NULL, 2, NULL); 
+  xTaskCreate(TaskSensor, "TaskSensor", 4096, NULL, 2, NULL); 
 }
 
 void loop() { 
